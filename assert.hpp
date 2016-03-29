@@ -5,13 +5,16 @@
 #include <atomic>
 #include <exception>
 
-#define BK_ASSERT_ASSERT(EXP)                                                  \
-do {                                                                           \
-    if (!(EXP)) {                                                              \
-      ::bkassert::state::invoke_handler(#EXP, __FILE__, __func__, __LINE__);   \
-    }                                                                          \
-}                                                                              \
-while (false)
+#if defined(BOOST_COMP_MSVC_AVAILABLE)
+#   define BK_ASSERT_BREAK __debugbreak()
+#   define BK_ASSERT_LIKELY(x) !!(x)
+#elif defined(BOOST_COMP_GNUC_AVAILABLE) || defined(BOOST_COMP_CLANG_AVAILABLE)
+#   define BK_ASSERT_BREAK (void)0
+#   define BK_ASSERT_LIKELY(x) __builtin_expect(!!(x), 1)
+#endif
+
+#define BK_ASSERT_ASSERT(EXP) \
+(void)(BK_ASSERT_LIKELY(EXP) || (BK_ASSERT_BREAK, ::bkassert::state::invoke_handler(#EXP, __FILE__, __func__, __LINE__), 0))
 
 #define BK_ASSERT_SAFE(EXP) BK_ASSERT_ASSERT(EXP)
 #define BK_ASSERT(EXP) BK_ASSERT_ASSERT(EXP)
@@ -25,8 +28,9 @@ while (false)
 
 namespace bkassert {
 
-struct assertion_failure : public std::exception
-{
+struct assertion_failure : public std::exception {
+    virtual ~assertion_failure();
+
     assertion_failure() = default;
     assertion_failure(assertion_failure const&) = default;
     assertion_failure(assertion_failure&&) = default;

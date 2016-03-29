@@ -17,6 +17,8 @@ extern "C" {
 
 namespace bkassert {
 
+assertion_failure::~assertion_failure() = default;
+
 std::atomic<state::handler_t*> state::handler_ {&::bkassert::fail_abort};
 
 state::handler_t* state::set_handler(state::handler_t* const handler) noexcept {
@@ -98,11 +100,11 @@ void fail_sleep(
   , char const* const func
   , int         const line
 ) noexcept {
+    print_error(expr, file, func, line);
+
     for (;;) {
         do_sleep();
     }
-
-    fail_abort(expr, file, func, line);
 }
 
 void fail_throw(
