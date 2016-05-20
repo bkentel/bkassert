@@ -16,8 +16,17 @@
 #define BK_ASSERT_ASSERT(EXP) \
 (void)(BK_ASSERT_LIKELY(EXP) || (BK_ASSERT_BREAK, ::bkassert::state::invoke_handler(#EXP, __FILE__, __func__, __LINE__), 0))
 
+// Assertions only enabled in "safe" mode.
 #define BK_ASSERT_SAFE(EXP) BK_ASSERT_ASSERT(EXP)
-#define BK_ASSERT(EXP) BK_ASSERT_ASSERT(EXP)
+
+// Assertions enabled in "debug" mode.
+#if defined(BK_NO_ASSERT)
+#   define BK_ASSERT(EXP) ((void)0)
+#else
+#   define BK_ASSERT(EXP) BK_ASSERT_ASSERT(EXP)
+#endif
+
+// Assertions that are always enabled.
 #define BK_ASSERT_OPT(EXP) BK_ASSERT_ASSERT(EXP)
 
 #define BK_ASSERT_IMPL_CAT2(x, y) x ## y
@@ -91,7 +100,6 @@ struct assert_handler_guard {
     ~assert_handler_guard() {
         state::set_handler(previous_);
     }
-
 private:
     state::handler_t* previous_ = nullptr;
 };
